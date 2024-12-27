@@ -143,7 +143,7 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
         }
 
         if !context.continue_running {
-            break Ok(())
+            break Ok(());
         }
     }
 }

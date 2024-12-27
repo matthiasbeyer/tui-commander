@@ -1,1 +1,1 @@
-pub trait Context: std::fmt::Debug + Send { }
+pub trait Context: std::fmt::Debug + Send {}

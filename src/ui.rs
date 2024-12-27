@@ -114,11 +114,14 @@ where
                 .block(Block::default().borders(Borders::ALL));
 
             let input = Paragraph::new(self.input.value())
-                .style(if state.is_unknown_command() || !state.current_args_are_valid().unwrap_or(true) {
-                    Style::default().on_red()
-                } else {
-                    Style::default()
-                })
+                .style(
+                    if state.is_unknown_command() || !state.current_args_are_valid().unwrap_or(true)
+                    {
+                        Style::default().on_red()
+                    } else {
+                        Style::default()
+                    },
+                )
                 .block(Block::default().borders(Borders::ALL).title("Input"));
 
             ratatui::widgets::Clear.render(command_area, buf);
