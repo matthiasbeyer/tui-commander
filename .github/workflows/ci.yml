@@ -19,6 +19,10 @@ jobs:
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v15
+        with:
+          name: tui-commander
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Run code and formatting checks
         run: nix --print-build-logs flake check --show-trace
   doc:
@@ -31,6 +35,10 @@ jobs:
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v15
+        with:
+          name: tui-commander
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Build documentation
         run: nix --print-build-logs build .#tui-commander-doc --show-trace
   gitlint:
@@ -44,6 +52,10 @@ jobs:
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v15
+        with:
+          name: tui-commander
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Check git messages in branch
         run: nix develop -c gitlint --commits $(git merge-base origin/master HEAD)..HEAD
   dead:
@@ -56,6 +68,10 @@ jobs:
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v15
+        with:
+          name: tui-commander
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Run deadnix
         run: nix run github:astro/deadnix
   statix:
@@ -68,5 +84,9 @@ jobs:
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v15
+        with:
+          name: tui-commander
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Run deadnix
         run: nix develop -c statix check
