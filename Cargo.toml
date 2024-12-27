@@ -3,4 +3,11 @@ name = "tui-commander"
 version = "0.1.0"
 edition = "2021"
 
+authors = [ "Matthias Beyer <mail@beyermatthias.de>" ]
+description = "ratatui widget for command prompt (like rofi)"
+license = "MPL-2.0"
+
+keywords = [ "tui", "ratatui" ]
+
+
 [dependencies]
