@@ -151,11 +151,6 @@
             cargoClippyExtraArgs = "--benches --examples --tests --all-features -- --deny warnings";
           };
 
-          tui-commander-clippy = craneLib.cargoClippy {
-            inherit cargoArtifacts src pname;
-            cargoClippyExtraArgs = "--benches --examples --tests -- --deny warnings";
-          };
-
           tui-commander-fmt = nightlyCraneLib.cargoFmt {
             inherit src pname;
           };

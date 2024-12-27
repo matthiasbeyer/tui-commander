@@ -1,14 +1,10 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod command;
+mod commander;
+mod context;
+pub mod ui;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use self::command::Command;
+pub use self::commander::Commander;
+pub use self::commander::CommanderBuilder;
+pub use self::context::Context;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
