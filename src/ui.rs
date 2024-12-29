@@ -61,78 +61,75 @@ where
     where
         Self: Sized,
     {
-        if state.is_active() {
-            let msg = vec![
-                Span::styled("ESC", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(" to exit prompt"),
-            ];
-            let style = Style::default().add_modifier(Modifier::RAPID_BLINK);
+        let msg = vec![
+            Span::styled("ESC", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" to exit prompt"),
+        ];
+        let style = Style::default().add_modifier(Modifier::RAPID_BLINK);
 
-            let suggestions = state.suggestions();
+        let suggestions = state.suggestions();
 
-            let suggestions_height = self.max_height_percent.min({
-                suggestions.len() as u16 + 2 // borders
-            });
+        let suggestions_height = self.max_height_percent.min({
+            suggestions.len() as u16 + 2 // borders
+        });
 
-            let [_rest, commander_area] = Layout::vertical([
-                Constraint::Fill(1),
-                Constraint::Length(suggestions_height + 3),
-            ])
-            .flex(ratatui::layout::Flex::Start)
-            .areas(area);
+        let [_rest, commander_area] = Layout::vertical([
+            Constraint::Fill(1),
+            Constraint::Length(suggestions_height + 3),
+        ])
+        .flex(ratatui::layout::Flex::Start)
+        .areas(area);
 
-            let [suggestions_area, command_area] = Layout::vertical([
-                Constraint::Length(suggestions_height),
-                Constraint::Length(3),
-            ])
-            .areas(commander_area);
+        let [suggestions_area, command_area] = Layout::vertical([
+            Constraint::Length(suggestions_height),
+            Constraint::Length(3),
+        ])
+        .areas(commander_area);
 
-            if !suggestions.is_empty() {
-                ratatui::widgets::Clear.render(suggestions_area, buf);
-                let list = List::new(suggestions.clone())
-                    .block(Block::bordered().title("Suggestions"))
-                    .style(Style::new().white())
-                    .highlight_style(Style::new().italic())
-                    .highlight_symbol(">>")
-                    .repeat_highlight_symbol(true)
-                    .direction(ListDirection::BottomToTop);
-                Widget::render(list, suggestions_area, buf)
-            }
+        if !suggestions.is_empty() {
+            ratatui::widgets::Clear.render(suggestions_area, buf);
+            let list = List::new(suggestions.clone())
+                .block(Block::bordered().title("Suggestions"))
+                .style(Style::new().white())
+                .highlight_style(Style::new().italic())
+                .highlight_symbol(">>")
+                .repeat_highlight_symbol(true)
+                .direction(ListDirection::BottomToTop);
+            Widget::render(list, suggestions_area, buf)
+        }
 
-            let [commander_logo_area, inserting_area, desc_area] = Layout::horizontal([
-                Constraint::Min(3),
-                Constraint::Percentage(100),
-                Constraint::Min(20),
-            ])
-            .areas(command_area);
+        let [commander_logo_area, inserting_area, desc_area] = Layout::horizontal([
+            Constraint::Min(3),
+            Constraint::Percentage(100),
+            Constraint::Min(20),
+        ])
+        .areas(command_area);
 
-            let logo = Paragraph::new(
-                Text::from(Line::from(Span::styled(
-                    ":",
-                    Style::default().add_modifier(Modifier::BOLD),
-                )))
-                .style(style),
-            )
+        let logo = Paragraph::new(
+            Text::from(Line::from(Span::styled(
+                ":",
+                Style::default().add_modifier(Modifier::BOLD),
+            )))
+            .style(style),
+        )
+        .block(Block::default().borders(Borders::ALL));
+
+        let desc_text = Paragraph::new(Text::from(Line::from(msg)).style(style))
             .block(Block::default().borders(Borders::ALL));
 
-            let desc_text = Paragraph::new(Text::from(Line::from(msg)).style(style))
-                .block(Block::default().borders(Borders::ALL));
+        let input = Paragraph::new(self.input.value())
+            .style(
+                if state.is_unknown_command() || !state.current_args_are_valid().unwrap_or(true) {
+                    Style::default().on_red()
+                } else {
+                    Style::default()
+                },
+            )
+            .block(Block::default().borders(Borders::ALL).title("Input"));
 
-            let input = Paragraph::new(self.input.value())
-                .style(
-                    if state.is_unknown_command() || !state.current_args_are_valid().unwrap_or(true)
-                    {
-                        Style::default().on_red()
-                    } else {
-                        Style::default()
-                    },
-                )
-                .block(Block::default().borders(Borders::ALL).title("Input"));
-
-            ratatui::widgets::Clear.render(command_area, buf);
-            logo.render(commander_logo_area, buf);
-            input.render(inserting_area, buf);
-            desc_text.render(desc_area, buf);
-        }
+        ratatui::widgets::Clear.render(command_area, buf);
+        logo.render(commander_logo_area, buf);
+        input.render(inserting_area, buf);
+        desc_text.render(desc_area, buf);
     }
 }

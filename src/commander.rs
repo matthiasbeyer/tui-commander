@@ -6,11 +6,8 @@ use crate::Command;
 
 pub struct Commander<Context> {
     command_builders: HashMap<&'static str, CommandFuncs<Context>>,
-
     command_str: String,
-
     search_engine: nucleo_matcher::Matcher,
-    active: bool,
 }
 
 impl<Context> Commander<Context>
@@ -22,21 +19,6 @@ where
             case_sensitive: false,
             command_builders: HashMap::new(),
         }
-    }
-
-    #[inline]
-    pub fn is_active(&self) -> bool {
-        self.active
-    }
-
-    #[inline]
-    pub fn start(&mut self) {
-        self.active = true
-    }
-
-    #[inline]
-    pub fn reset(&mut self) {
-        self.active = false
     }
 
     pub fn suggestions(&mut self) -> Vec<String> {
@@ -57,6 +39,12 @@ where
 
     pub fn set_input(&mut self, input: String) {
         self.command_str = input;
+    }
+
+    /// Alias for Self::set_input(String::new())
+    #[inline]
+    pub fn reset_input(&mut self) {
+        self.set_input(String::new());
     }
 
     pub fn execute(&mut self, context: &mut Context) -> Result<(), CommanderError> {
@@ -212,8 +200,6 @@ impl<Context> CommanderBuilder<Context> {
 
         Commander {
             command_builders: self.command_builders,
-
-            active: false,
             search_engine,
             command_str: String::new(),
         }
