@@ -44,6 +44,11 @@ impl<Context> Ui<Context> {
     pub fn value(&self) -> &str {
         self.input.value()
     }
+
+    #[inline]
+    pub fn reset_value(&mut self) {
+        self.input.reset()
+    }
 }
 
 impl<Context> StatefulWidget for &mut Ui<Context>
