@@ -46,7 +46,7 @@ impl<Context> Ui<Context> {
     }
 
     #[inline]
-    pub fn reset_value(&mut self) {
+    pub fn reset(&mut self) {
         self.input.reset()
     }
 }
