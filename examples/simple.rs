@@ -30,8 +30,8 @@ impl Command<CommandContext> for QuitCommand {
         "quit"
     }
 
-    fn args_are_valid(_: &[&str]) -> bool {
-        false
+    fn args_are_valid(args: &[&str]) -> bool {
+        args.is_empty()
     }
 
     fn build_from_command_name_str(
