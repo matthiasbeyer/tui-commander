@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use crate::command::CommandBox;
 use crate::Command;
@@ -39,30 +40,15 @@ where
     }
 
     pub fn suggestions(&mut self) -> Vec<String> {
-        let commands = self
-            .command_names()
-            .map(ToString::to_string)
-            .collect::<Vec<String>>();
+        let all_commands = self.all_command_names();
 
-        let Some((command, _args)) = self.get_command_args() else {
-            return commands;
-        };
-
-        nucleo_matcher::pattern::Pattern::new(
-            command,
-            nucleo_matcher::pattern::CaseMatching::Ignore,
-            nucleo_matcher::pattern::Normalization::Never,
-            nucleo_matcher::pattern::AtomKind::Fuzzy,
-        )
-        .match_list(commands, &mut self.search_engine)
-        .into_iter()
-        .map(|tpl| tpl.0)
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>()
-    }
-
-    fn command_names(&self) -> impl Iterator<Item = &str> {
-        self.command_builders.keys().copied()
+        if let Some((command, _args)) = self.get_command_args() {
+            let command = command.to_string();
+            self.suggestions_for_command(command, all_commands)
+                .collect::<Vec<String>>()
+        } else {
+            all_commands
+        }
     }
 
     pub fn is_unknown_command(&mut self) -> bool {
@@ -74,20 +60,46 @@ where
     }
 
     pub fn execute(&mut self, context: &mut Context) -> Result<(), CommanderError> {
-        let Some((command, args)) = self.get_command_args() else {
+        let Some((command, args)) = self.get_currently_matching_command_and_args() else {
             return Err(CommanderError::EmptyCommand);
         };
 
-        let Some(command_funcs) = self.command_builders.get(command) else {
+        let Some(command_funcs) = self.command_builders.get(command.deref()) else {
             return Err(CommanderError::UnknownCommand(self.command_str.clone()));
         };
 
-        let commandbox = (command_funcs.builder)(command)?;
-        let args = args.into_iter().map(ToString::to_string).collect();
+        let commandbox = (command_funcs.builder)(&command)?;
         commandbox
             .0
             .execute(args, context)
             .map_err(CommanderError::Command)
+    }
+
+    fn all_command_names(&self) -> Vec<String> {
+        self.command_names()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>()
+    }
+
+    fn suggestions_for_command(
+        &mut self,
+        command: String,
+        all_commands: Vec<String>,
+    ) -> impl Iterator<Item = String> {
+        nucleo_matcher::pattern::Pattern::new(
+            command.as_ref(),
+            nucleo_matcher::pattern::CaseMatching::Ignore,
+            nucleo_matcher::pattern::Normalization::Never,
+            nucleo_matcher::pattern::AtomKind::Fuzzy,
+        )
+        .match_list(all_commands, &mut self.search_engine)
+        .into_iter()
+        .map(|tpl| tpl.0)
+        .map(|s| s.to_string())
+    }
+
+    fn command_names(&self) -> impl Iterator<Item = &str> {
+        self.command_builders.keys().copied()
     }
 
     fn find_command_funcs_for_command(
@@ -104,6 +116,15 @@ where
         let command = it.next()?;
         let args = it.collect();
         Some((command, args))
+    }
+
+    fn get_currently_matching_command_and_args(&mut self) -> Option<(String, Vec<String>)> {
+        let (command, args) = self.get_command_args()?;
+        let args = args.into_iter().map(String::from).collect();
+
+        self.suggestions_for_command(command.to_string(), self.all_command_names())
+            .next()
+            .map(|command| (command, args))
     }
 
     pub(crate) fn current_args_are_valid(&self) -> Result<bool, CommanderError> {
