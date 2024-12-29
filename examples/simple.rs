@@ -100,33 +100,36 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
     };
 
     let mut command_ui = tui_commander::ui::Ui::default();
-
+    let mut commander_active = false;
     let mut events = EventStream::new();
     loop {
         terminal.draw(|frame| {
-            frame.render_stateful_widget(&mut command_ui, frame.area(), &mut commander);
+            if commander_active {
+                frame.render_stateful_widget(&mut command_ui, frame.area(), &mut commander);
+            }
         })?;
 
         match events.next().fuse().await.unwrap().unwrap() {
             Event::Key(key) => {
                 if key.kind == KeyEventKind::Press {
                     match key.code {
-                        KeyCode::Char(':') if !commander.is_active() => {
-                            commander.start();
+                        KeyCode::Char(':') if !commander_active => {
+                            commander_active = true;
                         }
 
-                        KeyCode::Enter if commander.is_active() => {
+                        KeyCode::Enter if commander_active => {
                             if let Err(e) = commander.execute(&mut context) {
                                 println!("Error: {:?}", e);
                             }
                         }
 
-                        KeyCode::Esc if commander.is_active() => {
-                            commander.reset();
+                        KeyCode::Esc if commander_active => {
+                            commander_active = false;
+                            command_ui.reset();
                         }
 
                         _ => {
-                            if commander.is_active() {
+                            if commander_active {
                                 command_ui.handle_key_press(key);
                                 commander.set_input(command_ui.value().to_string());
                             } else {
