@@ -13,7 +13,7 @@ keywords = [ "tui", "ratatui" ]
 
 [dependencies]
 crossterm = { version = "0.28.1", features = ["event-stream"] }
-downcast-rs = "1.2.1"
+downcast-rs = "2.0.1"
 nucleo-matcher = "0.3.1"
 ratatui = "0.29.0"
 thiserror = "2.0.9"
