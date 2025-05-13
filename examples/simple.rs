@@ -91,11 +91,52 @@ impl Command<CommandContext> for EchoCommand {
     }
 }
 
+pub struct PopCommand;
+
+impl Command<CommandContext> for PopCommand {
+    fn name() -> &'static str
+    where
+        Self: Sized,
+    {
+        "pop"
+    }
+
+    fn build_from_command_name_str(
+        input: &str,
+    ) -> std::result::Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>>
+    where
+        Self: Sized,
+    {
+        if input == "pop" || input == "po" || input == "p" {
+            Ok(PopCommand)
+        } else {
+            Err(Box::new(Error))
+        }
+    }
+
+    fn args_are_valid(_: &[&str]) -> bool
+    where
+        Self: Sized,
+    {
+        false
+    }
+
+    fn execute(
+        &self,
+        _arguments: Vec<String>,
+        context: &mut CommandContext,
+    ) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        context.lines.pop();
+        Ok(())
+    }
+}
+
 async fn run(mut terminal: DefaultTerminal) -> Result<()> {
     let mut commander = Commander::builder()
         .with_case_sensitive(false)
         .with_command::<QuitCommand>()
         .with_command::<EchoCommand>()
+        .with_command::<PopCommand>()
         .build();
 
     let mut context = CommandContext {
