@@ -5,6 +5,7 @@ use crossterm::event::KeyCode;
 use crossterm::event::KeyEventKind;
 use futures::FutureExt;
 use futures::StreamExt;
+use ratatui::widgets::Widget;
 use ratatui::DefaultTerminal;
 use tui_commander::Command;
 use tui_commander::Commander;
@@ -13,6 +14,7 @@ use tui_commander::Context;
 #[derive(Debug)]
 pub struct CommandContext {
     continue_running: bool,
+    lines: Vec<String>,
 }
 
 impl Context for CommandContext {}
@@ -81,9 +83,50 @@ impl Command<CommandContext> for EchoCommand {
 
     fn execute(
         &self,
-        _arguments: Vec<String>,
-        _context: &mut CommandContext,
+        arguments: Vec<String>,
+        context: &mut CommandContext,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        context.lines.push(arguments.join(" "));
+        Ok(())
+    }
+}
+
+pub struct PopCommand;
+
+impl Command<CommandContext> for PopCommand {
+    fn name() -> &'static str
+    where
+        Self: Sized,
+    {
+        "pop"
+    }
+
+    fn build_from_command_name_str(
+        input: &str,
+    ) -> std::result::Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>>
+    where
+        Self: Sized,
+    {
+        if input == "pop" || input == "po" || input == "p" {
+            Ok(PopCommand)
+        } else {
+            Err(Box::new(Error))
+        }
+    }
+
+    fn args_are_valid(_: &[&str]) -> bool
+    where
+        Self: Sized,
+    {
+        false
+    }
+
+    fn execute(
+        &self,
+        _arguments: Vec<String>,
+        context: &mut CommandContext,
+    ) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        context.lines.pop();
         Ok(())
     }
 }
@@ -93,10 +136,12 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
         .with_case_sensitive(false)
         .with_command::<QuitCommand>()
         .with_command::<EchoCommand>()
+        .with_command::<PopCommand>()
         .build();
 
     let mut context = CommandContext {
         continue_running: true,
+        lines: Vec::new(),
     };
 
     let mut command_ui = tui_commander::ui::Ui::default();
@@ -104,6 +149,19 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
     let mut events = EventStream::new();
     loop {
         terminal.draw(|frame| {
+            ratatui::layout::Layout::vertical(
+                context
+                    .lines
+                    .iter()
+                    .map(|_| ratatui::layout::Constraint::Min(3)),
+            )
+            .split(frame.area())
+            .iter()
+            .zip(context.lines.iter())
+            .for_each(|(area, line)| {
+                ratatui::text::Line::from(line.clone()).render(*area, frame.buffer_mut())
+            });
+
             if commander_active {
                 frame.render_stateful_widget(&mut command_ui, frame.area(), &mut commander);
             }
@@ -118,8 +176,14 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         }
 
                         KeyCode::Enter if commander_active => {
-                            if let Err(e) = commander.execute(&mut context) {
-                                println!("Error: {:?}", e);
+                            match commander.execute(&mut context) {
+                                Err(e) => {
+                                    println!("Error: {:?}", e);
+                                }
+                                Ok(_) => {
+                                    commander_active = false;
+                                    command_ui.reset();
+                                }
                             }
                         }
 
