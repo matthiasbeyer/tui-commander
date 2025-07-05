@@ -19,6 +19,7 @@ thiserror = "2.0.12"
 tui-input = "0.12.1"
 
 [dev-dependencies]
+crossterm = { version = "*", features = ["event-stream"] }
 clap = { version = "4.5.40", features = ["derive"] }
 color-eyre = "0.6.5"
 futures = "0.3.31"

@@ -1,10 +1,10 @@
 use color_eyre::Result;
-use crossterm::event::Event;
-use crossterm::event::EventStream;
-use crossterm::event::KeyCode;
-use crossterm::event::KeyEventKind;
 use futures::FutureExt;
 use futures::StreamExt;
+use ratatui::crossterm::event::Event;
+use ratatui::crossterm::event::EventStream;
+use ratatui::crossterm::event::KeyCode;
+use ratatui::crossterm::event::KeyEventKind;
 use ratatui::widgets::Widget;
 use ratatui::DefaultTerminal;
 use tui_commander::Command;
