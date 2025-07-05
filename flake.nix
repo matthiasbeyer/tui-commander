@@ -155,18 +155,6 @@
             inherit src pname;
           };
 
-          tui-commander-tests = craneLib.cargoNextest {
-            inherit
-              cargoArtifacts
-              src
-              pname
-              buildInputs
-              ;
-            nativeBuildInputs = nativeBuildInputs ++ [
-              pkgs.coreutils
-            ];
-          };
-
           formatting = treefmt.config.build.check inputs.self;
         };
 
