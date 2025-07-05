@@ -2,11 +2,11 @@
   "nodes": {
     "crane": {
       "locked": {
-        "lastModified": 1734808813,
-        "narHash": "sha256-3aH/0Y6ajIlfy7j52FGZ+s4icVX0oHhqBzRdlOeztqg=",
+        "lastModified": 1751562746,
+        "narHash": "sha256-smpugNIkmDeicNz301Ll1bD7nFOty97T79m4GUMUczA=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "72e2d02dbac80c8c86bf6bf3e785536acf8ee926",
+        "rev": "aed2020fd3dc26e1e857d4107a5a67a33ab6c1fd",
         "type": "github"
       },
       "original": {
@@ -35,16 +35,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1735141468,
-        "narHash": "sha256-VIAjBr1qGcEbmhLwQJD6TABppPMggzOvqFsqkDoMsAY=",
+        "lastModified": 1751582995,
+        "narHash": "sha256-u7ubvtxdTnFPpV27AHpgoKn7qHuE7sgWgza/1oj5nzA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "4005c3ff7505313cbc21081776ad0ce5dfd7a3ce",
+        "rev": "7a732ed41ca0dd64b4b71b563ab9805a80a7d693",
         "type": "github"
       },
       "original": {
         "id": "nixpkgs",
-        "ref": "nixos-24.11",
+        "ref": "nixos-25.05",
         "type": "indirect"
       }
     },
@@ -65,11 +65,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1735266518,
-        "narHash": "sha256-2XkWYGgT+911gOLjgBj+8W8ZJk6P0qHJNz8RfKgT/5o=",
+        "lastModified": 1751683029,
+        "narHash": "sha256-dYO5X5jK8bpQOeRAo8R5aUt6M/+Ji1cZgstZI7SQ2IA=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "e0b3654b716098b47f3643c65fbb75ef49c033e1",
+        "rev": "9e5e62a33a929a67a5427fb7324a6f583dced0b2",
         "type": "github"
       },
       "original": {
@@ -115,11 +115,11 @@
     },
     "unstable-nixpkgs": {
       "locked": {
-        "lastModified": 1735268880,
-        "narHash": "sha256-7QEFnKkzD13SPxs+UFR5bUFN2fRw+GlL0am72ZjNre4=",
+        "lastModified": 1751625545,
+        "narHash": "sha256-4E7wWftF1ExK5ZEDzj41+9mVgxtuRV3wWCId7QAYMAU=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "7cc0bff31a3a705d3ac4fdceb030a17239412210",
+        "rev": "c860cf0b3a0829f0f6cf344ca8de83a2bbfab428",
         "type": "github"
       },
       "original": {

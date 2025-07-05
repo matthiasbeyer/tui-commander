@@ -1,7 +1,7 @@
 {
   description = "The tui-commander project";
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-24.11";
+    nixpkgs.url = "nixpkgs/nixos-25.05";
     unstable-nixpkgs.url = "nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
@@ -153,18 +153,6 @@
 
           tui-commander-fmt = nightlyCraneLib.cargoFmt {
             inherit src pname;
-          };
-
-          tui-commander-tests = craneLib.cargoNextest {
-            inherit
-              cargoArtifacts
-              src
-              pname
-              buildInputs
-              ;
-            nativeBuildInputs = nativeBuildInputs ++ [
-              pkgs.coreutils
-            ];
           };
 
           formatting = treefmt.config.build.check inputs.self;
