@@ -178,7 +178,7 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         KeyCode::Enter if commander_active => {
                             match commander.execute(&mut context) {
                                 Err(e) => {
-                                    println!("Error: {:?}", e);
+                                    println!("Error: {e:?}");
                                 }
                                 Ok(_) => {
                                     commander_active = false;
