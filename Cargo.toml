@@ -1,6 +1,6 @@
 [package]
 name = "tui-commander"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 authors = [ "Matthias Beyer <mail@beyermatthias.de>" ]
@@ -12,7 +12,6 @@ keywords = [ "tui", "ratatui" ]
 
 
 [dependencies]
-crossterm = { version = "0.28.1", features = ["event-stream"] }
 downcast-rs = "2.0.2"
 nucleo-matcher = "0.3.1"
 ratatui = { version = "0.29.0", features = ["crossterm"] }
@@ -22,6 +21,7 @@ tui-input = "0.14.0"
 [dev-dependencies]
 clap = { version = "4.5.51", features = ["derive"] }
 color-eyre = "0.6.5"
+crossterm = { version = "0.28.1", features = ["event-stream"] }
 futures = "0.3.31"
 ratatui = { version = "0.29.0", features = ["crossterm"] }
 static_assertions = "1.1.0"
