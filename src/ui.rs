@@ -16,8 +16,8 @@ use ratatui::widgets::ListDirection;
 use ratatui::widgets::Paragraph;
 use ratatui::widgets::StatefulWidget;
 use ratatui::widgets::Widget;
-use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
+use tui_input::backend::crossterm::EventHandler;
 
 pub struct Ui<Context> {
     input: Input,

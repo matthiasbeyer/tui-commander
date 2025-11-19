@@ -9,7 +9,6 @@
   ];
   programs = {
     rustfmt.enable = true;
-    rustfmt.package = pkgs.rust-bin.nightly.latest.rustfmt;
     nixfmt.enable = true;
     yamlfmt.enable = true;
     mdformat.enable = true;
