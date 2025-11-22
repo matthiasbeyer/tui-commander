@@ -74,8 +74,22 @@ cmd! {
     }
 }
 
+cmd! {
+    EchoSeperateCommand => "echo-seperate",
+    args: Vec<String>,
+    parse: |args: Vec<String>| Ok(args),
+    run: |this: &EchoSeperateCommand, args: Vec<String>| {
+        for arg in args {
+            if let Err(error) = this.sender.blocking_send(AppEvent::Echo(arg)) {
+                eprintln!("{error:?}");
+            }
+        }
+        Ok(())
+    }
+}
+
 async fn run(mut terminal: DefaultTerminal) -> Result<()> {
-    let (app_event_sender, mut app_event_recv) = tokio::sync::mpsc::channel(1);
+    let (app_event_sender, mut app_event_recv) = tokio::sync::mpsc::channel(10);
     let mut commander = Commander::builder()
         .with_command(QuitCommand {
             sender: app_event_sender.clone(),
