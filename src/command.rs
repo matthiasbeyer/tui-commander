@@ -25,11 +25,14 @@ pub(crate) struct Args(Box<dyn std::any::Any>);
 
 impl ErasedCommand {
     pub(crate) fn erase<C>(command: C) -> Self
-        where C: Command,
+    where
+        C: Command,
     {
         Self {
             fn_parse_args: |object, args| -> Result<Args, Error> {
-                let command: &C = (*object).downcast_ref().unwrap();
+                let any: &dyn std::any::Any = object;
+                let command = (*any).downcast_ref::<C>().unwrap();
+
                 match command.parse_args(args) {
                     Ok(args) => Ok(Args(Box::new(args))),
                     Err(error) => Err(Error(Box::new(error))),
@@ -37,7 +40,8 @@ impl ErasedCommand {
             },
 
             fn_run: |object, Args(args)| -> Result<(), Error> {
-                let command: &C = object.downcast_ref().unwrap();
+                let any: &dyn std::any::Any = object;
+                let command = any.downcast_ref::<C>().unwrap();
                 let args: C::Args = *args.downcast().unwrap();
                 match command.run(args) {
                     Ok(()) => Ok(()),
@@ -50,13 +54,10 @@ impl ErasedCommand {
     }
 
     pub(crate) fn parse_args(&self, args: Vec<String>) -> Result<Args, Error> {
-        (self.fn_parse_args)(&self.object, args)
+        (self.fn_parse_args)(&*self.object, args)
     }
 
     pub(crate) fn run(&self, args: Args) -> Result<(), Error> {
-        (self.fn_run)(&self.object, args)
+        (self.fn_run)(&*self.object, args)
     }
 }
-
-
-

@@ -55,9 +55,12 @@ cmd! {
     args: (),
     parse: |_args| Ok(()),
     run: |this: &QuitCommand, _args: ()| {
-        if let Err(error) = this.sender.blocking_send(AppEvent::Quit) {
-            eprintln!("{error:?}");
-        }
+        let sender = this.sender.clone();
+        tokio::spawn(async move {
+            if let Err(error) = sender.send(AppEvent::Quit).await {
+                eprintln!("{error:?}");
+            }
+        });
         Ok(())
     }
 }
@@ -67,9 +70,12 @@ cmd! {
     args: String,
     parse: |args: Vec<String>| Ok(args.join(", ")),
     run: |this: &EchoCommand, args: String| {
-        if let Err(error) = this.sender.blocking_send(AppEvent::Echo(args)) {
-            eprintln!("{error:?}");
-        }
+        let sender = this.sender.clone();
+        tokio::spawn(async move {
+            if let Err(error) = sender.blocking_send(AppEvent::Echo(args)) {
+                eprintln!("{error:?}");
+            }
+        });
         Ok(())
     }
 }
