@@ -152,7 +152,8 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         } else {
                             Color::Green
                         }))
-                    });
+                    })
+                    .with_suggestion_highlight_symbol(Some(">> ".to_string()));
                 command_ui.render(inner_commander_area, frame.buffer_mut(), &mut commander);
             }
         })?;

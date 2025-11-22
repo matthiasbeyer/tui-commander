@@ -7,6 +7,8 @@ use ratatui::widgets::Widget;
 #[derive(Default)]
 pub struct CommanderView {
     input_top: bool,
+    suggestion_highlight_symbol: Option<String>,
+    suggestion_highlight_spacing: Option<ratatui::widgets::HighlightSpacing>,
     input_line_processing: Option<Box<dyn Fn(Line<'_>) -> Line<'_>>>,
     suggestion_line_processing: Option<Box<dyn Fn(usize, ListItem<'_>) -> ListItem<'_>>>,
 }
@@ -15,7 +17,7 @@ impl CommanderView {
     pub fn with_input_line_processing<P>(mut self, proc: P) -> Self
     where
         P: Fn(Line<'_>) -> Line<'_>,
-        P: 'static
+        P: 'static,
     {
         self.input_line_processing = Some(Box::new(proc));
         self
@@ -24,9 +26,25 @@ impl CommanderView {
     pub fn with_suggestion_line_processing<P>(mut self, proc: P) -> Self
     where
         P: Fn(usize, ListItem<'_>) -> ListItem<'_>,
-        P: 'static
+        P: 'static,
     {
         self.suggestion_line_processing = Some(Box::new(proc));
+        self
+    }
+
+    pub fn with_suggestion_highlight_spacing(
+        mut self,
+        suggestion_highlight_spacing: Option<ratatui::widgets::HighlightSpacing>,
+    ) -> Self {
+        self.suggestion_highlight_spacing = suggestion_highlight_spacing;
+        self
+    }
+
+    pub fn with_suggestion_highlight_symbol(
+        mut self,
+        suggestion_highlight_symbol: Option<String>,
+    ) -> Self {
+        self.suggestion_highlight_symbol = suggestion_highlight_symbol;
         self
     }
 }
@@ -94,9 +112,17 @@ impl CommanderView {
             })
             .collect::<Vec<_>>();
 
-        let list = ratatui::widgets::List::new(suggestions)
-            .highlight_symbol(">")
-            .highlight_spacing(ratatui::widgets::HighlightSpacing::Always);
+        let list = ratatui::widgets::List::new(suggestions);
+        let list = if let Some(sym) = self.suggestion_highlight_symbol.as_ref() {
+            list.highlight_symbol(sym)
+        } else {
+            list
+        };
+        let list = if let Some(space) = self.suggestion_highlight_spacing.as_ref() {
+            list.highlight_spacing(space.clone())
+        } else {
+            list
+        };
 
         ratatui::widgets::StatefulWidget::render(
             list,

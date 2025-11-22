@@ -58,6 +58,29 @@ impl Commander {
             .collect()
     }
 
+    pub fn use_selected_suggestion(&mut self) {
+        if let Some(sel) = self.suggestion_list_state.selected() {
+            let mut input_split = self.input.split_whitespace();
+            let Some(first_word) = input_split.next() else {
+                return;
+            };
+
+            let Some((name, _cmd)) = self
+                .commands
+                .iter()
+                .filter(|(name, _cmd)| name.starts_with(first_word))
+                .nth(sel)
+            else {
+                return;
+            };
+
+            let mut new_input = vec![*name];
+            new_input.extend(input_split);
+
+            self.set_input(new_input.join(" "));
+        }
+    }
+
     pub(crate) fn input(&self) -> &str {
         &self.input
     }
