@@ -15,6 +15,10 @@ impl Commander {
         }
     }
 
+    pub fn available_commands(&self) -> impl Iterator<Item = &'static str> + use<'_> {
+        self.commands.keys().copied()
+    }
+
     #[inline]
     pub fn push_to_input(&mut self, chr: char) {
         self.input.push(chr);
