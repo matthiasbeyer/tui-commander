@@ -89,6 +89,10 @@ impl Commander {
         &mut self.suggestion_list_state
     }
 
+    pub fn suggestion_list_state(&self) -> &ratatui::widgets::ListState {
+        &self.suggestion_list_state
+    }
+
     /// Run the current command
     ///
     /// Runs either what is currently selected from the suggestion list, if anything is selected,
