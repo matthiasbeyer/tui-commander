@@ -16,6 +16,16 @@ impl Commander {
     }
 
     #[inline]
+    pub fn push_to_input(&mut self, chr: char) {
+        self.input.push(chr);
+    }
+
+    #[inline]
+    pub fn backspace(&mut self) {
+        let _ = self.input.pop();
+    }
+
+    #[inline]
     pub fn set_input(&mut self, input: String) {
         self.input = input;
     }
@@ -23,6 +33,16 @@ impl Commander {
     #[inline]
     pub fn reset_input(&mut self) {
         self.input = String::new();
+    }
+
+    #[inline]
+    pub fn next_suggestion(&mut self) {
+        self.suggestion_list_state.select_next();
+    }
+
+    #[inline]
+    pub fn prev_suggestion(&mut self) {
+        self.suggestion_list_state.select_previous();
     }
 
     // TODO: Matching algorithm: Currently prefix, but fuzzy would be nice
@@ -44,6 +64,46 @@ impl Commander {
 
     pub(crate) fn suggestion_list_state_mut(&mut self) -> &mut ratatui::widgets::ListState {
         &mut self.suggestion_list_state
+    }
+
+    /// Run the current command
+    ///
+    /// Runs either what is currently selected from the suggestion list, if anything is selected,
+    /// or the command that matches the first word
+    ///
+    /// Returns Ok(None) if no command was run, Ok(Some(())) if the command ran successfully or
+    /// Err(_) if the command errored
+    pub fn run(&mut self) -> Result<Option<()>, Box<dyn std::error::Error>> {
+        let mut input_split = self.input.split_whitespace();
+        let Some(first_word) = input_split.next() else {
+            return Ok(None);
+        };
+
+        let input_rest = input_split.map(ToString::to_string).collect::<Vec<_>>();
+
+        let mut all_relevant_commands = self
+            .commands
+            .iter()
+            .filter(|(name, _cmd)| name.starts_with(first_word));
+
+        let command = if let Some(sel) = self.suggestion_list_state.selected() {
+            all_relevant_commands
+                .nth(sel)
+                .map(|(_name, command)| command)
+        } else {
+            all_relevant_commands.next().map(|(_name, cmd)| cmd)
+        };
+
+        if let Some(command) = command {
+            let args = match command.parse_args(input_rest) {
+                Ok(args) => args,
+                Err(error) => return Err(error.0),
+            };
+
+            command.run(args).map_err(|e| e.0).map(Some)
+        } else {
+            Ok(None)
+        }
     }
 }
 

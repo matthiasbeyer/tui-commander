@@ -1,6 +1,6 @@
 pub trait Command: 'static {
     const NAME: &'static str;
-    type Error: 'static;
+    type Error: std::error::Error + 'static;
     type Args: 'static;
 
     /// This function gets called repeatedly as long as the user types
@@ -20,7 +20,7 @@ pub(crate) struct ErasedCommand {
     fn_run: fn(&dyn std::any::Any, Args) -> Result<(), Error>,
 }
 
-pub(crate) struct Error(Box<dyn std::any::Any>);
+pub(crate) struct Error(pub(crate) Box<dyn std::error::Error>);
 pub(crate) struct Args(Box<dyn std::any::Any>);
 
 impl ErasedCommand {
@@ -29,7 +29,7 @@ impl ErasedCommand {
     {
         Self {
             fn_parse_args: |object, args| -> Result<Args, Error> {
-                let command: &C = object.downcast_ref().unwrap();
+                let command: &C = (*object).downcast_ref().unwrap();
                 match command.parse_args(args) {
                     Ok(args) => Ok(Args(Box::new(args))),
                     Err(error) => Err(Error(Box::new(error))),
