@@ -35,11 +35,11 @@ impl<'l> ratatui::widgets::StatefulWidget for CommanderView<'l> {
     ) {
         let [input_area, suggestions_area] = if self.input_top {
             let [input_area, suggestions_area] =
-                Layout::vertical(vec![Constraint::Min(1), Constraint::Fill(1)]).areas(area);
+                Layout::vertical(vec![Constraint::Min(1), Constraint::Percentage(100)]).areas(area);
             [input_area, suggestions_area]
         } else {
             let [suggestions_area, input_area] =
-                Layout::vertical(vec![Constraint::Fill(1), Constraint::Min(1)]).areas(area);
+                Layout::vertical(vec![Constraint::Percentage(100), Constraint::Min(1)]).areas(area);
 
             [input_area, suggestions_area]
         };

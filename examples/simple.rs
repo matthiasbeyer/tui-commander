@@ -25,42 +25,49 @@ pub enum AppEvent {
 type EventSender = tokio::sync::mpsc::Sender<AppEvent>;
 type EventReceiver = tokio::sync::mpsc::Receiver<AppEvent>;
 
-pub struct QuitCommand {
-    sender: EventSender,
+macro_rules! cmd {
+    ($tname:ident => $name:literal, args: $args:ty, parse: $parse:expr, run: $run:expr) => {
+        pub struct $tname {
+            sender: EventSender,
+        }
+
+        impl Command for $tname {
+            const NAME: &'static str = $name;
+            type Error = Error;
+            type Args = $args;
+
+            fn parse_args(
+                &self,
+                args: Vec<String>,
+            ) -> std::result::Result<Self::Args, Self::Error> {
+                $parse(args)
+            }
+
+            fn run(&self, args: Self::Args) -> std::result::Result<(), Self::Error> {
+                $run(self, args)
+            }
+        }
+    };
 }
 
-impl Command for QuitCommand {
-    const NAME: &'static str = "quit";
-    type Error = Error;
-    type Args = ();
-
-    fn parse_args(&self, _args: Vec<String>) -> std::result::Result<Self::Args, Self::Error> {
-        Ok(())
-    }
-
-    fn run(&self, _args: Self::Args) -> std::result::Result<(), Self::Error> {
-        if let Err(error) = self.sender.blocking_send(AppEvent::Quit) {
+cmd! {
+    QuitCommand => "quit",
+    args: (),
+    parse: |_args| Ok(()),
+    run: |this: &QuitCommand, _args: ()| {
+        if let Err(error) = this.sender.blocking_send(AppEvent::Quit) {
             eprintln!("{error:?}");
         }
         Ok(())
     }
 }
 
-pub struct EchoCommand {
-    sender: EventSender,
-}
-
-impl Command for EchoCommand {
-    const NAME: &'static str = "echo";
-    type Error = Error;
-    type Args = String;
-
-    fn parse_args(&self, args: Vec<String>) -> std::result::Result<Self::Args, Self::Error> {
-        Ok(args.join(", "))
-    }
-
-    fn run(&self, args: Self::Args) -> std::result::Result<(), Self::Error> {
-        if let Err(error) = self.sender.blocking_send(AppEvent::Echo(args)) {
+cmd! {
+    EchoCommand => "echo",
+    args: String,
+    parse: |args: Vec<String>| Ok(args.join(", ")),
+    run: |this: &EchoCommand, args: String| {
+        if let Err(error) = this.sender.blocking_send(AppEvent::Echo(args)) {
             eprintln!("{error:?}");
         }
         Ok(())
