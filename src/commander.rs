@@ -100,7 +100,9 @@ impl Commander {
                 Err(error) => return Err(error.0),
             };
 
-            command.run(args).map_err(|e| e.0).map(Some)
+            let res = command.run(args).map_err(|e| e.0).map(Some);
+            self.reset_input();
+            res
         } else {
             Ok(None)
         }

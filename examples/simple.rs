@@ -72,7 +72,7 @@ cmd! {
     run: |this: &EchoCommand, args: String| {
         let sender = this.sender.clone();
         tokio::spawn(async move {
-            if let Err(error) = sender.blocking_send(AppEvent::Echo(args)) {
+            if let Err(error) = sender.send(AppEvent::Echo(args)).await {
                 eprintln!("{error:?}");
             }
         });
@@ -85,11 +85,14 @@ cmd! {
     args: Vec<String>,
     parse: |args: Vec<String>| Ok(args),
     run: |this: &EchoSeperateCommand, args: Vec<String>| {
-        for arg in args {
-            if let Err(error) = this.sender.blocking_send(AppEvent::Echo(arg)) {
-                eprintln!("{error:?}");
+        let sender = this.sender.clone();
+        tokio::spawn(async move {
+            for arg in args {
+                if let Err(error) = sender.send(AppEvent::Echo(arg)).await {
+                    eprintln!("{error:?}");
+                }
             }
-        }
+        });
         Ok(())
     }
 }
@@ -101,7 +104,10 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
             sender: app_event_sender.clone(),
         })
         .with_command(EchoCommand {
-            sender: app_event_sender,
+            sender: app_event_sender.clone(),
+        })
+        .with_command(EchoSeperateCommand {
+            sender: app_event_sender.clone(),
         })
         .build();
 
@@ -147,13 +153,17 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         KeyCode::Up if commander_active => commander.prev_suggestion(),
                         KeyCode::Down if commander_active => commander.next_suggestion(),
 
-                        KeyCode::Enter if commander_active => match commander.run() {
-                            Ok(Some(())) => {}
-                            Ok(None) => {}
-                            Err(error) => {
-                                eprintln!("Error running commander: {error:?}");
+                        KeyCode::Enter if commander_active => {
+                            match commander.run() {
+                                Ok(Some(())) => {}
+                                Ok(None) => {}
+                                Err(error) => {
+                                    eprintln!("Error running commander: {error:?}");
+                                }
                             }
-                        },
+
+                            commander_active = false;
+                        }
 
                         KeyCode::Esc if commander_active => {
                             commander_active = false;
