@@ -1,19 +1,25 @@
 use ratatui::layout::Constraint;
 use ratatui::layout::Layout;
 use ratatui::text::Line;
-use ratatui::widgets::ListItem;
 use ratatui::widgets::Widget;
 
-#[derive(Default)]
 pub struct CommanderView {
     input_top: bool,
-    suggestion_highlight_symbol: Option<String>,
-    suggestion_highlight_spacing: Option<ratatui::widgets::HighlightSpacing>,
+    list_widget_builder: Box<dyn Fn(Vec<String>) -> ratatui::widgets::List<'static>>,
     input_line_processing: Option<Box<dyn Fn(Line<'_>) -> Line<'_>>>,
-    suggestion_line_processing: Option<Box<dyn Fn(usize, ListItem<'_>) -> ListItem<'_>>>,
 }
 
 impl CommanderView {
+    pub fn new(
+        list_widget_builder: Box<dyn Fn(Vec<String>) -> ratatui::widgets::List<'static>>,
+    ) -> Self {
+        Self {
+            input_top: false,
+            list_widget_builder,
+            input_line_processing: None,
+        }
+    }
+
     pub fn with_input_line_processing<P>(mut self, proc: P) -> Self
     where
         P: Fn(Line<'_>) -> Line<'_>,
@@ -23,30 +29,6 @@ impl CommanderView {
         self
     }
 
-    pub fn with_suggestion_line_processing<P>(mut self, proc: P) -> Self
-    where
-        P: Fn(usize, ListItem<'_>) -> ListItem<'_>,
-        P: 'static,
-    {
-        self.suggestion_line_processing = Some(Box::new(proc));
-        self
-    }
-
-    pub fn with_suggestion_highlight_spacing(
-        mut self,
-        suggestion_highlight_spacing: Option<ratatui::widgets::HighlightSpacing>,
-    ) -> Self {
-        self.suggestion_highlight_spacing = suggestion_highlight_spacing;
-        self
-    }
-
-    pub fn with_suggestion_highlight_symbol(
-        mut self,
-        suggestion_highlight_symbol: Option<String>,
-    ) -> Self {
-        self.suggestion_highlight_symbol = suggestion_highlight_symbol;
-        self
-    }
 }
 
 impl ratatui::widgets::StatefulWidget for CommanderView {
@@ -98,32 +80,7 @@ impl CommanderView {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut crate::Commander,
     ) {
-        let suggestions = state
-            .suggestions()
-            .into_iter()
-            .map(ratatui::widgets::ListItem::from)
-            .enumerate()
-            .map(|(i, list_item)| {
-                if let Some(proc) = self.suggestion_line_processing.as_ref() {
-                    (proc)(i, list_item)
-                } else {
-                    list_item
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let list = ratatui::widgets::List::new(suggestions);
-        let list = if let Some(sym) = self.suggestion_highlight_symbol.as_ref() {
-            list.highlight_symbol(sym)
-        } else {
-            list
-        };
-        let list = if let Some(space) = self.suggestion_highlight_spacing.as_ref() {
-            list.highlight_spacing(space.clone())
-        } else {
-            list
-        };
-
+        let list = (self.list_widget_builder)(state.suggestions());
         ratatui::widgets::StatefulWidget::render(
             list,
             area,

@@ -8,8 +8,6 @@ use ratatui::layout::Constraint;
 use ratatui::layout::Layout;
 use ratatui::style::Color;
 use ratatui::style::Style;
-use ratatui::text::Line;
-use ratatui::widgets::ListItem;
 use ratatui::widgets::Widget;
 use ratatui::DefaultTerminal;
 use tui_commander::Command;
@@ -27,7 +25,6 @@ pub enum AppEvent {
 }
 
 type EventSender = tokio::sync::mpsc::Sender<AppEvent>;
-type EventReceiver = tokio::sync::mpsc::Receiver<AppEvent>;
 
 macro_rules! cmd {
     ($tname:ident => $name:literal, args: $args:ty, parse: $parse:expr, run: $run:expr) => {
@@ -142,18 +139,22 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 let inner_commander_area = block.inner(commander_area);
                 block.render(commander_area, frame.buffer_mut());
 
-                let command_ui = tui_commander::CommanderView::default()
-                    .with_input_line_processing(|line: Line<'_>| {
-                        line.style(Style::default().bg(Color::Black).fg(Color::Yellow))
-                    })
-                    .with_suggestion_line_processing(|i, list_item: ListItem<'_>| {
-                        list_item.style(Style::default().fg(if i % 2 == 0 {
-                            Color::Blue
-                        } else {
-                            Color::Green
-                        }))
-                    })
-                    .with_suggestion_highlight_symbol(Some(">> ".to_string()));
+                let command_ui = tui_commander::CommanderView::new(Box::new(|list| {
+                    let list = list.into_iter().enumerate().map(|(i, line)| {
+                        ratatui::widgets::ListItem::from(line).style(Style::default().fg(
+                            if i % 2 == 0 {
+                                Color::Blue
+                            } else {
+                                Color::Green
+                            },
+                        ))
+                    });
+
+                    ratatui::widgets::List::new(list)
+                        .highlight_symbol(">> ")
+                        .highlight_spacing(ratatui::widgets::HighlightSpacing::Always)
+                }));
+
                 command_ui.render(inner_commander_area, frame.buffer_mut(), &mut commander);
             }
         })?;
