@@ -81,11 +81,11 @@ impl Commander {
         }
     }
 
-    pub(crate) fn input(&self) -> &str {
+    pub fn input(&self) -> &str {
         &self.input
     }
 
-    pub(crate) fn suggestion_list_state_mut(&mut self) -> &mut ratatui::widgets::ListState {
+    pub fn suggestion_list_state_mut(&mut self) -> &mut ratatui::widgets::ListState {
         &mut self.suggestion_list_state
     }
 

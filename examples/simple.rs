@@ -134,34 +134,41 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
             .render(log_area, frame.buffer_mut());
 
             if commander_active {
-                use ratatui::widgets::StatefulWidget;
                 let block = ratatui::widgets::Block::bordered();
                 let inner_commander_area = block.inner(commander_area);
                 block.render(commander_area, frame.buffer_mut());
 
-                let input_line_widget_builder = Box::new(|line: String| {
-                    ratatui::text::Line::from(line)
-                });
-
-                let suggestion_list_widget_builder = Box::new(|list: Vec<String>| {
-                    let list = list.into_iter().enumerate().map(|(i, line)| {
-                        ratatui::widgets::ListItem::from(line).style(Style::default().fg(
-                            if i % 2 == 0 {
-                                Color::Blue
-                            } else {
-                                Color::Green
-                            },
-                        ))
-                    });
+                let line = ratatui::text::Line::from(commander.input());
+                let suggestions = {
+                    let list = commander
+                        .suggestions()
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, line)| {
+                            ratatui::widgets::ListItem::from(line).style(Style::default().fg(
+                                if i % 2 == 0 {
+                                    Color::Blue
+                                } else {
+                                    Color::Green
+                                },
+                            ))
+                        });
 
                     ratatui::widgets::List::new(list)
                         .highlight_symbol(">> ")
                         .highlight_spacing(ratatui::widgets::HighlightSpacing::Always)
-                });
+                };
 
-                let command_ui = tui_commander::CommanderView::new(input_line_widget_builder, suggestion_list_widget_builder);
+                let [suggestions_area, input_area] =
+                    Layout::vertical(vec![Constraint::Percentage(100), Constraint::Min(1)])
+                        .areas(inner_commander_area);
 
-                command_ui.render(inner_commander_area, frame.buffer_mut(), &mut commander);
+                line.render(input_area, frame.buffer_mut());
+                ratatui::widgets::StatefulWidget::render(suggestions,
+                    suggestions_area,
+                    frame.buffer_mut(),
+                    commander.suggestion_list_state_mut(),
+                );
             }
         })?;
 
