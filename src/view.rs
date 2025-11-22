@@ -1,30 +1,37 @@
 use ratatui::layout::Constraint;
 use ratatui::layout::Layout;
 use ratatui::text::Line;
+use ratatui::widgets::ListItem;
 use ratatui::widgets::Widget;
 
-pub struct CommanderView<'l> {
-    pub input_top: bool,
-    pub input_line_processing: &'l dyn LineProcessor,
-    pub suggestion_line_processing: &'l dyn LineProcessor,
+#[derive(Default)]
+pub struct CommanderView {
+    input_top: bool,
+    input_line_processing: Option<Box<dyn Fn(Line<'_>) -> Line<'_>>>,
+    suggestion_line_processing: Option<Box<dyn Fn(usize, ListItem<'_>) -> ListItem<'_>>>,
 }
 
-impl Default for CommanderView<'_> {
-    fn default() -> Self {
-        Self {
-            input_top: false,
-            input_line_processing: &no_processing,
-            suggestion_line_processing: &no_processing,
-        }
+impl CommanderView {
+    pub fn with_input_line_processing<P>(mut self, proc: P) -> Self
+    where
+        P: Fn(Line<'_>) -> Line<'_>,
+        P: 'static
+    {
+        self.input_line_processing = Some(Box::new(proc));
+        self
+    }
+
+    pub fn with_suggestion_line_processing<P>(mut self, proc: P) -> Self
+    where
+        P: Fn(usize, ListItem<'_>) -> ListItem<'_>,
+        P: 'static
+    {
+        self.suggestion_line_processing = Some(Box::new(proc));
+        self
     }
 }
 
-#[inline]
-fn no_processing(line: Line) -> Line {
-    line
-}
-
-impl<'l> ratatui::widgets::StatefulWidget for CommanderView<'l> {
+impl ratatui::widgets::StatefulWidget for CommanderView {
     type State = crate::Commander;
 
     fn render(
@@ -49,16 +56,21 @@ impl<'l> ratatui::widgets::StatefulWidget for CommanderView<'l> {
     }
 }
 
-impl<'l> CommanderView<'l> {
+impl CommanderView {
     fn render_input(
         &self,
         area: ratatui::prelude::Rect,
         buf: &mut ratatui::prelude::Buffer,
         state: &mut crate::Commander,
     ) {
-        let line = self
-            .input_line_processing
-            .process(ratatui::text::Line::from(state.input()));
+        let line = ratatui::text::Line::from(state.input());
+
+        let line = if let Some(proc) = self.input_line_processing.as_ref() {
+            (proc)(line)
+        } else {
+            line
+        };
+
         line.render(area, buf);
     }
 
@@ -72,6 +84,14 @@ impl<'l> CommanderView<'l> {
             .suggestions()
             .into_iter()
             .map(ratatui::widgets::ListItem::from)
+            .enumerate()
+            .map(|(i, list_item)| {
+                if let Some(proc) = self.suggestion_line_processing.as_ref() {
+                    (proc)(i, list_item)
+                } else {
+                    list_item
+                }
+            })
             .collect::<Vec<_>>();
 
         let list = ratatui::widgets::List::new(suggestions)
@@ -84,18 +104,5 @@ impl<'l> CommanderView<'l> {
             buf,
             state.suggestion_list_state_mut(),
         );
-    }
-}
-
-pub trait LineProcessor {
-    fn process<'l>(&self, line: Line<'l>) -> Line<'l>;
-}
-
-impl<F> LineProcessor for F
-where
-    F: Fn(Line<'_>) -> Line<'_>,
-{
-    fn process<'l>(&self, line: Line<'l>) -> Line<'l> {
-        (self)(line)
     }
 }

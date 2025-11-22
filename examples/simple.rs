@@ -6,6 +6,10 @@ use futures::FutureExt;
 use futures::StreamExt;
 use ratatui::layout::Constraint;
 use ratatui::layout::Layout;
+use ratatui::style::Color;
+use ratatui::style::Style;
+use ratatui::text::Line;
+use ratatui::widgets::ListItem;
 use ratatui::widgets::Widget;
 use ratatui::DefaultTerminal;
 use tui_commander::Command;
@@ -138,7 +142,17 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 let inner_commander_area = block.inner(commander_area);
                 block.render(commander_area, frame.buffer_mut());
 
-                let command_ui = tui_commander::CommanderView::default();
+                let command_ui = tui_commander::CommanderView::default()
+                    .with_input_line_processing(|line: Line<'_>| {
+                        line.style(Style::default().bg(Color::Black).fg(Color::Yellow))
+                    })
+                    .with_suggestion_line_processing(|i, list_item: ListItem<'_>| {
+                        list_item.style(Style::default().fg(if i % 2 == 0 {
+                            Color::Blue
+                        } else {
+                            Color::Green
+                        }))
+                    });
                 command_ui.render(inner_commander_area, frame.buffer_mut(), &mut commander);
             }
         })?;
