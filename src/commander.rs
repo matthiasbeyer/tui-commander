@@ -1,207 +1,74 @@
 use std::collections::HashMap;
-use std::ops::Deref;
 
-use crate::command::CommandBox;
 use crate::Command;
 
-pub struct Commander<Context> {
-    command_builders: HashMap<&'static str, CommandFuncs<Context>>,
-    command_str: String,
-    search_engine: nucleo_matcher::Matcher,
+pub struct Commander {
+    input: String,
+    commands: HashMap<&'static str, crate::command::ErasedCommand>,
+    suggestion_list_state: ratatui::widgets::ListState,
 }
 
-impl<Context> Commander<Context>
-where
-    Context: crate::Context,
-{
-    pub fn builder() -> CommanderBuilder<Context> {
+impl Commander {
+    pub fn builder() -> CommanderBuilder {
         CommanderBuilder {
-            case_sensitive: false,
-            command_builders: HashMap::new(),
+            commands: HashMap::new(),
         }
     }
 
-    pub fn suggestions(&mut self) -> Vec<String> {
-        let all_commands = self.all_command_names();
-
-        if let Some((command, _args)) = self.get_command_args() {
-            let command = command.to_string();
-            self.suggestions_for_command(command, all_commands)
-                .collect::<Vec<String>>()
-        } else {
-            all_commands
-        }
-    }
-
-    pub fn is_unknown_command(&mut self) -> bool {
-        self.suggestions().is_empty()
-    }
-
+    #[inline]
     pub fn set_input(&mut self, input: String) {
-        self.command_str = input;
+        self.input = input;
     }
 
-    /// Alias for Self::set_input(String::new())
     #[inline]
     pub fn reset_input(&mut self) {
-        self.set_input(String::new());
+        self.input = String::new();
     }
 
-    pub fn execute(&mut self, context: &mut Context) -> Result<(), CommanderError> {
-        let Some((command, args)) = self.get_currently_matching_command_and_args() else {
-            return Err(CommanderError::EmptyCommand);
+    // TODO: Matching algorithm: Currently prefix, but fuzzy would be nice
+    pub fn suggestions(&self) -> Vec<String> {
+        let Some(first_word) = self.input.split_whitespace().next() else {
+            return Vec::new();
         };
 
-        let Some(command_funcs) = self.command_builders.get(command.deref()) else {
-            return Err(CommanderError::UnknownCommand(self.command_str.clone()));
-        };
-
-        let commandbox = (command_funcs.builder)(&command)?;
-        commandbox
-            .0
-            .execute(args, context)
-            .map_err(CommanderError::Command)
-    }
-
-    fn all_command_names(&self) -> Vec<String> {
-        self.command_names()
+        self.commands
+            .keys()
+            .filter(|name| name.starts_with(first_word))
             .map(ToString::to_string)
-            .collect::<Vec<String>>()
+            .collect()
     }
 
-    fn suggestions_for_command(
-        &mut self,
-        command: String,
-        all_commands: Vec<String>,
-    ) -> impl Iterator<Item = String> {
-        nucleo_matcher::pattern::Pattern::new(
-            command.as_ref(),
-            nucleo_matcher::pattern::CaseMatching::Ignore,
-            nucleo_matcher::pattern::Normalization::Never,
-            nucleo_matcher::pattern::AtomKind::Fuzzy,
-        )
-        .match_list(all_commands, &mut self.search_engine)
-        .into_iter()
-        .map(|tpl| tpl.0)
-        .map(|s| s.to_string())
+    pub(crate) fn input(&self) -> &str {
+        &self.input
     }
 
-    fn command_names(&self) -> impl Iterator<Item = &str> {
-        self.command_builders.keys().copied()
-    }
-
-    fn find_command_funcs_for_command(
-        &self,
-        command: &str,
-    ) -> Result<&CommandFuncs<Context>, CommanderError> {
-        self.command_builders
-            .get(command)
-            .ok_or_else(|| CommanderError::UnknownCommand(self.command_str.clone()))
-    }
-
-    fn get_command_args(&self) -> Option<(&str, Vec<&str>)> {
-        let mut it = self.command_str.split(' ');
-        let command = it.next()?;
-        let args = it.collect();
-        Some((command, args))
-    }
-
-    fn get_currently_matching_command_and_args(&mut self) -> Option<(String, Vec<String>)> {
-        let (command, args) = self.get_command_args()?;
-        let args = args.into_iter().map(String::from).collect();
-
-        self.suggestions_for_command(command.to_string(), self.all_command_names())
-            .next()
-            .map(|command| (command, args))
-    }
-
-    pub(crate) fn current_args_are_valid(&self) -> Result<bool, CommanderError> {
-        let Some((command, args)) = self.get_command_args() else {
-            return Err(CommanderError::EmptyCommand);
-        };
-
-        let funcs = self.find_command_funcs_for_command(command)?;
-        Ok((funcs.arg_validator)(&args))
+    pub(crate) fn suggestion_list_state_mut(&mut self) -> &mut ratatui::widgets::ListState {
+        &mut self.suggestion_list_state
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum CommanderError {
-    #[error("Command execution errored")]
-    Command(Box<dyn std::error::Error + Send + Sync + 'static>),
-
-    #[error("Empty command string")]
-    EmptyCommand,
-
-    #[error("Unknown command {}", .0)]
-    UnknownCommand(String),
+pub struct CommanderBuilder {
+    commands: HashMap<&'static str, crate::command::ErasedCommand>,
 }
 
-struct CommandFuncs<Context> {
-    builder: CommandBuilderFn<Context>,
-    arg_validator: CommandArgValidatorFn,
-}
-
-type CommandBuilderFn<Context> = Box<dyn Fn(&str) -> Result<CommandBox<Context>, CommanderError>>;
-type CommandArgValidatorFn = Box<dyn Fn(&[&str]) -> bool>;
-
-pub struct CommanderBuilder<Context> {
-    case_sensitive: bool,
-    command_builders: HashMap<&'static str, CommandFuncs<Context>>,
-}
-
-impl<Context> CommanderBuilder<Context> {
-    pub fn with_case_sensitive(mut self, b: bool) -> Self {
-        self.case_sensitive = b;
-        self
-    }
-
-    pub fn with_command<C>(mut self) -> Self
+impl CommanderBuilder {
+    pub fn with_command<C>(mut self, command: C) -> Self
     where
-        C: Command<Context> + Send + Sync + 'static,
-        Context: 'static,
+        C: Command,
     {
-        fn command_builder<C, Context>(input: &str) -> Result<CommandBox<Context>, CommanderError>
-        where
-            C: Command<Context> + Send + Sync + 'static,
-            Context: 'static,
-        {
-            C::build_from_command_name_str(input)
-                .map(|c| CommandBox(Box::new(c) as Box<dyn Command<Context>>))
-                .map_err(CommanderError::Command)
-        }
-
-        fn arg_validator<C, Context>(args: &[&str]) -> bool
-        where
-            C: Command<Context> + Send + Sync + 'static,
-            Context: 'static,
-        {
-            C::args_are_valid(args)
-        }
-
-        self.command_builders.insert(
-            C::name(),
-            CommandFuncs {
-                builder: Box::new(command_builder::<C, Context>),
-                arg_validator: Box::new(arg_validator::<C, Context>),
-            },
-        );
+        self.commands
+            .insert(C::NAME, crate::command::ErasedCommand::erase(command));
         self
     }
 
-    pub fn build(mut self) -> Commander<Context> {
-        self.command_builders.shrink_to_fit();
-        let search_engine = nucleo_matcher::Matcher::new({
-            let mut config = nucleo_matcher::Config::DEFAULT;
-            config.ignore_case = !self.case_sensitive;
-            config.prefer_prefix = true;
-            config
-        });
-
+    pub fn build(mut self) -> Commander {
         Commander {
-            command_builders: self.command_builders,
-            search_engine,
-            command_str: String::new(),
+            input: String::new(),
+            suggestion_list_state: ratatui::widgets::ListState::default(),
+            commands: {
+                self.commands.shrink_to_fit();
+                self.commands
+            },
         }
     }
 }

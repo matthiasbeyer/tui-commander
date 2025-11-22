@@ -1,24 +1,62 @@
-pub trait Command<Context> {
-    /// The name of the command, what a user has to type to find the command and execute
-    fn name() -> &'static str
-    where
-        Self: Sized;
+pub trait Command: 'static {
+    const NAME: &'static str;
+    type Error: 'static;
+    type Args: 'static;
 
-    fn build_from_command_name_str(
-        input: &str,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>>
-    where
-        Self: Sized;
+    /// This function gets called repeatedly as long as the user types
+    ///
+    /// It should return an error if the args are not valid for the command, which then is logged
+    /// and the input is highlighted
+    fn parse_args(&self, args: Vec<String>) -> Result<Self::Args, Self::Error>;
 
-    fn args_are_valid(args: &[&str]) -> bool
-    where
-        Self: Sized;
-
-    fn execute(
-        &self,
-        arguments: Vec<String>,
-        context: &mut Context,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>;
+    /// As soon as the user hits <CR> / Enter / Return, this function gets called with the
+    /// Ok(Self::Args) from the Command::parse_args() function
+    fn run(&self, args: Self::Args) -> Result<(), Self::Error>;
 }
 
-pub struct CommandBox<Context>(pub(crate) Box<dyn Command<Context>>);
+pub(crate) struct ErasedCommand {
+    object: Box<dyn std::any::Any>,
+    fn_parse_args: fn(&dyn std::any::Any, Vec<String>) -> Result<Args, Error>,
+    fn_run: fn(&dyn std::any::Any, Args) -> Result<(), Error>,
+}
+
+pub(crate) struct Error(Box<dyn std::any::Any>);
+pub(crate) struct Args(Box<dyn std::any::Any>);
+
+impl ErasedCommand {
+    pub(crate) fn erase<C>(command: C) -> Self
+        where C: Command,
+    {
+        Self {
+            fn_parse_args: |object, args| -> Result<Args, Error> {
+                let command: &C = object.downcast_ref().unwrap();
+                match command.parse_args(args) {
+                    Ok(args) => Ok(Args(Box::new(args))),
+                    Err(error) => Err(Error(Box::new(error))),
+                }
+            },
+
+            fn_run: |object, Args(args)| -> Result<(), Error> {
+                let command: &C = object.downcast_ref().unwrap();
+                let args: C::Args = *args.downcast().unwrap();
+                match command.run(args) {
+                    Ok(()) => Ok(()),
+                    Err(error) => Err(Error(Box::new(error))),
+                }
+            },
+
+            object: Box::new(command),
+        }
+    }
+
+    pub(crate) fn parse_args(&self, args: Vec<String>) -> Result<Args, Error> {
+        (self.fn_parse_args)(&self.object, args)
+    }
+
+    pub(crate) fn run(&self, args: Args) -> Result<(), Error> {
+        (self.fn_run)(&self.object, args)
+    }
+}
+
+
+
