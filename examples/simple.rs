@@ -157,6 +157,7 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                     ratatui::widgets::List::new(list)
                         .highlight_symbol(">> ")
                         .highlight_spacing(ratatui::widgets::HighlightSpacing::Always)
+                        .block(ratatui::widgets::Block::bordered())
                 };
 
                 let [suggestions_area, input_area] =
@@ -164,7 +165,8 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                         .areas(inner_commander_area);
 
                 line.render(input_area, frame.buffer_mut());
-                ratatui::widgets::StatefulWidget::render(suggestions,
+                ratatui::widgets::StatefulWidget::render(
+                    suggestions,
                     suggestions_area,
                     frame.buffer_mut(),
                     commander.suggestion_list_state_mut(),
