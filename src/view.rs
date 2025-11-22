@@ -6,29 +6,20 @@ use ratatui::widgets::Widget;
 pub struct CommanderView {
     input_top: bool,
     list_widget_builder: Box<dyn Fn(Vec<String>) -> ratatui::widgets::List<'static>>,
-    input_line_processing: Option<Box<dyn Fn(Line<'_>) -> Line<'_>>>,
+    input_line_widget_builder: Box<dyn Fn(String) -> Line<'static>>,
 }
 
 impl CommanderView {
     pub fn new(
+        input_line_widget_builder: Box<dyn Fn(String) -> Line<'static>>,
         list_widget_builder: Box<dyn Fn(Vec<String>) -> ratatui::widgets::List<'static>>,
     ) -> Self {
         Self {
             input_top: false,
             list_widget_builder,
-            input_line_processing: None,
+            input_line_widget_builder,
         }
     }
-
-    pub fn with_input_line_processing<P>(mut self, proc: P) -> Self
-    where
-        P: Fn(Line<'_>) -> Line<'_>,
-        P: 'static,
-    {
-        self.input_line_processing = Some(Box::new(proc));
-        self
-    }
-
 }
 
 impl ratatui::widgets::StatefulWidget for CommanderView {
@@ -63,14 +54,7 @@ impl CommanderView {
         buf: &mut ratatui::prelude::Buffer,
         state: &mut crate::Commander,
     ) {
-        let line = ratatui::text::Line::from(state.input());
-
-        let line = if let Some(proc) = self.input_line_processing.as_ref() {
-            (proc)(line)
-        } else {
-            line
-        };
-
+        let line = (self.input_line_widget_builder)(state.input().to_string());
         line.render(area, buf);
     }
 

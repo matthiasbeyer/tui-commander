@@ -139,7 +139,11 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                 let inner_commander_area = block.inner(commander_area);
                 block.render(commander_area, frame.buffer_mut());
 
-                let command_ui = tui_commander::CommanderView::new(Box::new(|list| {
+                let input_line_widget_builder = Box::new(|line: String| {
+                    ratatui::text::Line::from(line)
+                });
+
+                let suggestion_list_widget_builder = Box::new(|list: Vec<String>| {
                     let list = list.into_iter().enumerate().map(|(i, line)| {
                         ratatui::widgets::ListItem::from(line).style(Style::default().fg(
                             if i % 2 == 0 {
@@ -153,7 +157,9 @@ async fn run(mut terminal: DefaultTerminal) -> Result<()> {
                     ratatui::widgets::List::new(list)
                         .highlight_symbol(">> ")
                         .highlight_spacing(ratatui::widgets::HighlightSpacing::Always)
-                }));
+                });
+
+                let command_ui = tui_commander::CommanderView::new(input_line_widget_builder, suggestion_list_widget_builder);
 
                 command_ui.render(inner_commander_area, frame.buffer_mut(), &mut commander);
             }
