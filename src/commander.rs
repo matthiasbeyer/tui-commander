@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use crate::command::CommandBox;
 use crate::Command;
+use crate::command::CommandBox;
 
 pub struct Commander<Context> {
     command_builders: HashMap<&'static str, CommandFuncs<Context>>,
